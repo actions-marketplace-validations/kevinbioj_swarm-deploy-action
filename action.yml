@@ -1,0 +1,44 @@
+name: "Swarm Stack Deploy Action"
+author: "Kevin BIOJOUT <biojoutk1106@gmail.com>"
+description: "Deploy with ease any Swarm stack to a remote server."
+
+branding:
+  color: "blue"
+  icon: "target"
+
+inputs:
+  compose_file:
+    description: "Path to the Compose file containing the stack to deploy."
+    required: true
+  remote_host:
+    description: "Host of the remote server to deploy the stack to (user@hostname[:port])."
+    required: true
+  remote_private-key:
+    description: "Private key to authenticate with against the remote server."
+    required: true
+  stack_name:
+    description: "Name to deploy the stack as to the remote server."
+    required: true
+  with_registry_auth:
+    description: "Whether to pass authentication credentials to the remote server (defaults to false)."
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    # 1. Create SSH folder where configuration and keys are stored.
+    - run: mkdir -p ~/.ssh; chmod 700 ~/.ssh
+      shell: bash
+    # 2. Disable remote host key checking - to be changed with proper key verification.
+    - run: echo "StrictHostKeyChecking no" > ~/.ssh/config
+      shell: bash
+    # 3. Write to id_rsa the private key to use to authenticate.
+    - run: echo "${{ inputs.remote_private-key }}" > ~/.ssh/id_rsa; chmod 600 ~/.ssh/id_rsa
+      shell: bash
+    # 4. Export a custom DOCKER_HOST targeting the remote server via SSH.
+    - run: export DOCKER_HOST="ssh://${{ inputs.remote_host }}"
+      shell: bash
+    # 5. Deploy the stack on the remote server via SSH.
+    - run: docker stack deploy -c ${{ inputs.compose_file }} ${{ inputs.with_registry_auth && '--with-registry-auth' || '' }} ${{ inputs.stack_name }}
+      shell: bash
