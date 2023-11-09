@@ -36,9 +36,6 @@ runs:
     # 3. Write to id_rsa the private key to use to authenticate.
     - run: echo "${{ inputs.remote_private-key }}" > ~/.ssh/id_rsa; chmod 600 ~/.ssh/id_rsa
       shell: bash
-    # 4. Export a custom DOCKER_HOST targeting the remote server via SSH.
-    - run: export DOCKER_HOST="ssh://${{ inputs.remote_host }}"
-      shell: bash
-    # 5. Deploy the stack on the remote server via SSH.
-    - run: docker stack deploy -c ${{ inputs.compose_file }} ${{ inputs.with_registry_auth && '--with-registry-auth' || '' }} ${{ inputs.stack_name }}
+    # 4. Deploy the stack on the remote server via SSH.
+    - run: docker -H ssh://${{ inputs.remote_host }} stack deploy -c ${{ inputs.compose_file }} ${{ inputs.with_registry_auth && '--with-registry-auth' || '' }} ${{ inputs.stack_name }}
       shell: bash
